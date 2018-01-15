@@ -42,7 +42,7 @@ class DrivyBrain
   end
 
   def write_output
-    rentals_list = @rentals.collect { |r| { id: r.id, price: r.rental_price } }
+    rentals_list = @rentals.collect { |r| r.to_h }
     begin
       File.open(@output_filename, 'w') do |f|
         f.write(JSON.pretty_generate({ rentals: rentals_list}))

@@ -1,6 +1,7 @@
 require "json"
 require_relative "car"
 require_relative "rental"
+require_relative "rentalmodification"
 
 class DrivyBrain
   def initialize(input_filename, output_filename)
@@ -15,7 +16,16 @@ class DrivyBrain
     @rentals = load_objects(data_json, :rentals) do |o|
       r = Rental.new(o)
       r.car = @cars.find { |c| o[:car_id] == c.id }
+      r.compute_rental_price
       r
+    end
+    @rentals_modif = load_objects(data_json, :rental_modifications) do |o|
+      r = @rentals.find { |rental| rental.id == o[:rental_id] }
+      if r
+        rm = RentalModification.new(r, o)
+        rm.compute_modifs
+        rm
+      end
     end
     write_output
   end
@@ -42,10 +52,10 @@ class DrivyBrain
   end
 
   def write_output
-    rentals_list = @rentals.collect { |r| { id: r.id, price: r.rental_price } }
+    rental_modifs_list = @rentals_modif.collect { |r| r.to_h }
     begin
       File.open(@output_filename, 'w') do |f|
-        f.write(JSON.pretty_generate({ rentals: rentals_list}))
+        f.write(JSON.pretty_generate({ rental_modifications: rental_modifs_list}))
       end
     rescue Exception => e
       p "Error in writing in '#{@output_filename}' : #{e.message}"
